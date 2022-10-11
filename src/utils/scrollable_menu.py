@@ -1,103 +1,20 @@
 from pimoroni import Button
+from .interactable import Interactible
 import time
 
-class ScrollableMenu:
-    @property
-    def color_bg(self):
-        return self.bg
-
-    @color_bg.setter
-    def color_bg(self, values):
-
-        self.bg = self.display.create_pen(*values)
-    
-    @property
-    def color_fg(self):
-        return self.fg
-    
-    @color_fg.setter
-    def color_fg(self, values):
-        self.fg = self.display.create_pen(*values)
-    
-    @property
-    def color_hl(self):
-        return self.hl
-    
-    @color_hl.setter
-    def color_hl(self, values):
-        self.hl = self.display.create_pen(*values)
-
-    @property
-    def color_hl_fg(self):
-        return self.hl_fg
-    
-    @color_hl_fg.setter
-    def color_hl_fg(self, values):
-        self.hl_fg = self.display.create_pen(*values)
-
-    @property
-    def color_scrollbar(self):
-        return self.scroll_fg
-    
-    @color_scrollbar.setter
-    def color_scrollbar(self, values):
-        self.scroll_fg = self.display.create_pen(*values)
-
-    @property
-    def color_scrollbar_bg(self):
-        return self.scroll_bg
-    
-    @color_scrollbar_bg.setter
-    def color_scrollbar_bg(self, values):
-        self.scroll_bg = self.display.create_pen(*values)
-    
-    @property
-    def btn_prev(self):
-        return self._prev.read()
-    
-    @btn_prev.setter
-    def btn_prev(self, value):
-        self._prev = Button(value)
-    
-    @property
-    def btn_next(self):
-        return self._next.read()
-    
-    @btn_next.setter
-    def btn_next(self, value):
-        self._next = Button(value)
-    
-    @property
-    def btn_sel(self):
-        return self._select.read()
-    
-    @btn_sel.setter
-    def btn_sel(self, value):
-        self._select = Button(value)
-    
-    @property
-    def btn_exit(self):
-        return self._exit.read()
-
-    @btn_exit.setter
-    def btn_exit(self, value):
-        self._exit = Button(value)
+class ScrollableMenu(Interactible):
     
     # The vertical space between lines
     @property
     def line_space(self):
         # The font is 7 * font_size pixels high
         return self.font_size * 7 + 2 * self.text_padding_around
-    
-    # button_a = Button(12)
-    # button_b = Button(13)
-    # button_x = Button(14)
-    # button_y = Button(15)
 
-    def __init__(self, display, items = [], btn_prev = 15, btn_next = 14, btn_sel = 12, btn_exit = 13, color_bg = [0, 0, 0], color_fg = [255, 0, 0], color_hl = [0, 255, 0], color_hl_fg = [0, 0, 0], color_scrollbar = [0, 0, 0], color_scrollbar_bg = [30, 30, 30], font_size = 3, hscroll_timeout = 50, scrollbar_width = 4):
+    def __init__(self, display, items = [], btn_prev = 15, btn_next = 14, btn_sel = 12, btn_exit = 13, color_bg = [0, 0, 0], color_fg = [255, 255, 255], color_hl = [30, 30, 30], color_hl_fg = [255, 255, 255], color_scrollbar = [255, 0, 0], color_scrollbar_bg = [30, 30, 30], hscroll_timeout = 50, scrollbar_width = 4):
         # Set up attributes
         self.display = display
-        self.font_size = font_size
+
+        self.font_size = 3
         # The time between hoizontal scroll stop and restart
         self.hscroll_timeout = hscroll_timeout
         self.vscroll_offset = 0
@@ -107,6 +24,14 @@ class ScrollableMenu:
         self.scroll_text = ""
         self.scroll_countdown = 0
 
+        # Create managed attributes for display colors
+        self.color_property("color_bg", "bg")
+        self.color_property("color_fg", "fg")
+        self.color_property("color_hl", "hl")
+        self.color_property("color_hl_fg", "hl_fg")
+        self.color_property("color_scrollbar", "scroll_fg")
+        self.color_property("color_scrollbar_bg", "scroll_bg")
+
         self.color_bg = color_bg
         self.color_fg = color_fg
         self.color_hl = color_hl
@@ -115,6 +40,11 @@ class ScrollableMenu:
         self.color_scrollbar_bg = color_scrollbar_bg
 
         self.items = items
+
+        self.button_property("btn_exit", "_exit")
+        self.button_property("btn_sel", "_select")
+        self.button_property("btn_next", "_next")
+        self.button_property("btn_prev", "_prev")
 
         self.btn_exit = btn_exit
         self.btn_next = btn_next
@@ -140,9 +70,9 @@ class ScrollableMenu:
     
     def draw_list(self):
         # We want to have the view scroll when the cursor gets halfway down the screen
-        if 30 * (self.selected_index + 1) > self.Y // 2:
+        if self.line_space * (self.selected_index + 1) > self.Y // 2:
             # We achieve the scroll effect by applying a negative offset to the Y index
-            self.vscroll_offset = (self.Y // 2) - (self.line_space * self.selected_index)
+            self.vscroll_offset = (self.Y // 2) - (self.line_space * self.selected_index) - self.line_space // 2 + self.text_padding_around + 1
         else:
             self.vscroll_offset = 0
         
@@ -153,7 +83,7 @@ class ScrollableMenu:
         if self.scrollbar_width > 0 and len(self.items) * self.line_space > self.Y:
             scrollbar_height = self.Y // len(self.items)
             self.display.set_pen(self.color_scrollbar_bg)
-            self.display.rectangle(0, 0, self.line_start, self.Y)
+            self.display.rectangle(0, 0, self.scrollbar_width, self.Y)
             self.display.set_pen(self.color_scrollbar)
             self.display.rectangle(0, self.selected_index * scrollbar_height, self.scrollbar_width, scrollbar_height)
         elif self.scrollbar_width > 0:
@@ -175,7 +105,7 @@ class ScrollableMenu:
                     self.active_scrolling = False
             else:
             	self.display.set_pen(self.fg)
-            self.display.text(self.items[index], self.text_padding_around + self._line_start, self.text_padding_around + self.line_space * index + self.vscroll_offset, 10 * self.Y, 3)
+            self.display.text(self.items[index], self.text_padding_around + self._line_start, self.text_padding_around + self.line_space * index + self.vscroll_offset, 10 * self.Y, self.font_size)
         self.display.update()
     
     def do_text_scroll(self):
@@ -184,7 +114,7 @@ class ScrollableMenu:
         else:
             self.display.set_pen(self.hl)
             text_length = self.text_padding_around + self.display.measure_text(self.scroll_text, self.font_size)
-            self.display.rectangle(self._line_start, self.line_space * self.selected_index + self.vscroll_offset, text_length, self.line_space)
+            self.display.rectangle(self._line_start, self.line_space * self.selected_index + self.vscroll_offset, 1 + self.X - self.line_start, self.line_space)
             self.display.set_pen(self.hl_fg)
             self.display.text(self.scroll_text, self.text_padding_around + self._line_start, self.text_padding_around + self.line_space * self.selected_index + self.vscroll_offset, 10 * self.Y, self.font_size)
 

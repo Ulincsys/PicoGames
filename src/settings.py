@@ -1,12 +1,11 @@
 import json, os
+from utils import ScrollableMenu
 
-if "settings.json" in os.listdir():
-    print("Success!")
+settings = {
+    "brightness": 0.5
+}
 
-d = {"1": 1, "2" : 2}
 
-with open("settings.json", "w") as file:
-    json.dump(d, file)
 
 def loop():
     pass

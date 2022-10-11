@@ -33,7 +33,7 @@ def load_libraries():
 def loop():
     games = list(load_libraries())
 
-    menu = ScrollableMenu(display, games, font_size=3, color_hl=[255, 255, 255], color_bg=[20, 20, 20], color_fg=[0, 255, 0], color_scrollbar=[255, 0, 0])
+    menu = ScrollableMenu(display, games)
 
     while True:
         game = menu.get_selection()
